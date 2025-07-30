@@ -1,9 +1,10 @@
 import os
 import time
-import onnxruntime as ort
-import numpy as np
-import cv2
 from pathlib import Path
+
+import cv2
+import numpy as np
+import onnxruntime as ort
 from tqdm import tqdm
 
 # 設定
@@ -21,6 +22,7 @@ os.makedirs(txt_output_dir, exist_ok=True)
 session = ort.InferenceSession(onnx_path, providers=["CPUExecutionProvider"])
 input_name = session.get_inputs()[0].name
 
+
 # 前処理関数
 def preprocess(img_path):
     img0 = cv2.imread(img_path)
@@ -29,6 +31,7 @@ def preprocess(img_path):
     img = img.transpose(2, 0, 1).astype(np.float32) / 255.0
     img = np.expand_dims(img, axis=0)
     return img, img0.shape[1], img0.shape[0]
+
 
 # 非最大抑制（簡易版）
 def nms(pred, conf_thres=0.25, iou_thres=0.45):
@@ -46,6 +49,7 @@ def nms(pred, conf_thres=0.25, iou_thres=0.45):
         boxes = boxes[1:][ious < iou_thres]
     return keep
 
+
 def iou(box, boxes):
     # [x1, y1, x2, y2]
     x1 = np.maximum(box[0], boxes[:, 0])
@@ -56,6 +60,7 @@ def iou(box, boxes):
     area1 = (box[2] - box[0]) * (box[3] - box[1])
     area2 = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
     return inter / (area1 + area2 - inter + 1e-6)
+
 
 # 画像取得
 image_paths = sorted(list(Path(img_dir).glob("*.jpg")))
