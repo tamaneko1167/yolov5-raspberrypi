@@ -9,11 +9,12 @@ from tqdm import tqdm
 # 設定
 onnx_path = "yolov5/runs/train/yolov5n_voc_baseline/weights/best.onnx"
 img_dir = "yolov5/datasets/VOC/images/test2007"
-output_dir = "onnx_output"
+#img_dir = "yolov5/data/images"
+output_dir = "yolov5/onnx_output"
 txt_output_dir = os.path.join(output_dir, "labels")
 img_size = 640
 conf_thres = 0.25
-iou_thres = 0.45
+iou_thres = 0.25
 
 os.makedirs(txt_output_dir, exist_ok=True)
 
@@ -91,24 +92,23 @@ for img_path in tqdm(image_paths, desc="Running ONNX Inference"):
             filtered.append([x1, y1, x2, y2, conf, cls_id])
 
     filtered = np.array(filtered)
-    boxes = nms(pred, conf_thres, iou_thres)
+    #oxes = nms(filtered, conf_thres, iou_thres)
     txt_path = os.path.join(txt_output_dir, Path(img_path).stem + ".txt")
 
     with open(txt_path, "w") as f:
-        for det in boxes:
-            # det might contain more than 6 elements, so extract only needed ones
-            x1, y1, x2, y2 = det[0:4]
-            conf = det[4]
-            cls_id = det[5]
+        if filtered.shape[0] > 0:
+            boxes = nms(filtered, conf_thres, iou_thres)
+            for det in boxes:
+                x1, y1, x2, y2 = det[0:4]
+                conf = det[4]
+                cls_id = det[5]
 
-            # YOLO format conversion (normalize by original width and height)
-            cx = (x1 + x2) / 2 / w
-            cy = (y1 + y2) / 2 / h
-            bw = (x2 - x1) / w
-            bh = (y2 - y1) / h
+                cx = (x1 + x2) / 2 / w
+                cy = (y1 + y2) / 2 / h
+                bw = (x2 - x1) / w
+                bh = (y2 - y1) / h
 
-            f.write(f"{int(cls_id)} {cx:.6f} {cy:.6f} {bw:.6f} {bh:.6f}\n")
-
+                f.write(f"{int(cls_id)} {cx:.6f} {cy:.6f} {bw:.6f} {bh:.6f}\n")
 
 # 結果表示
 print(f"平均FPS: {1000 / np.mean(latencies):.2f}")
