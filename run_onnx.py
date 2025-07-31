@@ -74,7 +74,23 @@ for img_path in tqdm(image_paths, desc="Running ONNX Inference"):
     pred = np.squeeze(pred)
     if len(pred.shape) != 2:
         continue
+    
+    # pred shape: (25200, 25)
+    filtered = []
 
+    for det in pred:
+        x1, y1, x2, y2 = det[:4]
+        obj_conf = det[4]
+        class_probs = det[5:]
+
+        cls_id = np.argmax(class_probs)       
+        cls_conf = class_probs[cls_id]
+        conf = obj_conf * cls_conf
+
+        if conf > conf_thres:
+            filtered.append([x1, y1, x2, y2, conf, cls_id])
+
+    filtered = np.array(filtered)
     boxes = nms(pred, conf_thres, iou_thres)
     txt_path = os.path.join(txt_output_dir, Path(img_path).stem + ".txt")
 
