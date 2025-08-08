@@ -8,9 +8,9 @@ from pathlib import Path
 from tqdm import tqdm
 
 # 設定
-onnx_path = "runs/train/yolov5n_voc_baseline/weights/best_with_nms.onnx"
-img_dir = "../datasets/VOC/images/test2007"
-output_dir = "onnx_output"
+onnx_path = "runs/train/yolov5n_voc_depth_0.9/weights/best_with_nms.onnx"
+img_dir = "datasets/VOC/images/test2007"
+output_dir = "runs/train/yolov5n_voc_depth_0.9/onnx_output"
 txt_output_dir = os.path.join(output_dir, "labels")
 img_size = 640
 conf_thres = 0.25
