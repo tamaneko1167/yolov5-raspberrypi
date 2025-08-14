@@ -4,7 +4,7 @@ import numpy as np
 import cv2 as cv
 from yolo_util import YOLO  # ← NMS込みONNXを呼ぶクラス（frameを受け取って前処理する想定）
 
-ONNX_PATH = "yolov5n_with_nms.onnx"  # ★ NMS込みONNX
+ONNX_PATH = "runs/train/yolov5n_voc_baseline/weights/best_with_nms.onnx"  # ★ NMS込みONNX
 IMG_SIZE  = 640                      # ★ エクスポート時の入力サイズに合わせる
 CONF_THRES = 0.25                    # 追加で絞る場合
 
@@ -16,7 +16,7 @@ def parse_outputs(outputs):
     """
     if isinstance(outputs, (list, tuple)) and len(outputs) == 4:
         num_dets, boxes, scores, labels = outputs
-        m = int(num_dets[0])
+        m = int(np.array(num_dets).ravel()[0])
         if m == 0:
             return np.zeros((0, 6), dtype=np.float32)
         dets = []
