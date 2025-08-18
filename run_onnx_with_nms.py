@@ -1,10 +1,11 @@
 ## Inference script for ONNX model with NMS
 import os
 import time
-import onnxruntime as ort
-import numpy as np
-import cv2
 from pathlib import Path
+
+import cv2
+import numpy as np
+import onnxruntime as ort
 from tqdm import tqdm
 
 # 設定
@@ -21,6 +22,7 @@ os.makedirs(txt_output_dir, exist_ok=True)
 session = ort.InferenceSession(onnx_path, providers=["CPUExecutionProvider"])
 input_name = session.get_inputs()[0].name
 
+
 # 前処理関数
 def preprocess(img_path):
     img0 = cv2.imread(img_path)
@@ -29,6 +31,7 @@ def preprocess(img_path):
     img = img.transpose(2, 0, 1).astype(np.float32) / 255.0
     img = np.expand_dims(img, axis=0)
     return img, img0.shape[1], img0.shape[0]
+
 
 # 推論対象画像リスト
 image_paths = sorted(list(Path(img_dir).glob("*.jpg")))
@@ -71,7 +74,9 @@ for img_path in tqdm(image_paths, desc="Running NMS-included ONNX Inference"):
             bh = (y2 - y1) / h
 
             # f.write(f"{int(cls_id)} {cx:.6f} {cy:.6f} {bw:.6f} {bh:.6f}\n")
-            f.write(f"{cx:.6f} {cy:.6f} {bw:.6f} {bh:.6f} {conf:.6f} {int(cls_id)}\n")# => cx cy w h conf cls_id　##include the confidence score
+            f.write(
+                f"{cx:.6f} {cy:.6f} {bw:.6f} {bh:.6f} {conf:.6f} {int(cls_id)}\n"
+            )  # => cx cy w h conf cls_id　##include the confidence score
 
 # 平均処理時間表示
 print(f"平均FPS: {1000 / np.mean(latencies):.2f}")

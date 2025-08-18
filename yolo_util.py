@@ -1,5 +1,5 @@
-import numpy as np
 import cv2
+import numpy as np
 import onnxruntime as ort
 
 class_names = {
@@ -86,6 +86,7 @@ class_names = {
     80: "toothbrush",
 }
 
+
 def xyxy2xywh(x):
     y = x.copy()
     y[:, 0] = (x[:, 0] + x[:, 2]) / 2
@@ -93,6 +94,7 @@ def xyxy2xywh(x):
     y[:, 2] = x[:, 2] - x[:, 0]
     y[:, 3] = x[:, 3] - x[:, 1]
     return y
+
 
 def xywh2xyxy(x):
     y = x.copy()
@@ -102,12 +104,14 @@ def xywh2xyxy(x):
     y[:, 3] = x[:, 1] + x[:, 3] / 2
     return y
 
+
 class YOLO:
     """
     NMS込みONNXモデルを実行する簡易クラス。
     - __call__(frame) で生frame(BGR)を渡せば前処理→session.run()→ONNXの生出力(list)を返す。
-    - 既に作ったblob(1,3,H,W)を渡してもOK。
+    - 既に作ったblob(1,3,H,W)を渡してもOK。.
     """
+
     def __init__(self, model_path="yolov5n_with_nms.onnx", imgsz=640, providers=("CPUExecutionProvider",)):
         self.session = ort.InferenceSession(model_path, providers=list(providers))
         self.input_name = self.session.get_inputs()[0].name

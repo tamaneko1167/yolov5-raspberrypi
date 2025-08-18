@@ -1,9 +1,9 @@
-import onnxruntime as ort
-import numpy as np
 import cv2
+import numpy as np
+import onnxruntime as ort
 
 # === 1. モデルと画像のパス ===
-onnx_path = "yolov5/runs/train/yolov5n_voc_baseline/weights/best.onnx" # モデルのパスを指定
+onnx_path = "yolov5/runs/train/yolov5n_voc_baseline/weights/best.onnx"  # モデルのパスを指定
 img_path = "yolov5/data/images/bus.jpg"
 
 # === 2. ONNXモデルをロード ===
@@ -26,4 +26,3 @@ outputs = session.run(None, {input_name: input_tensor})
 output_array = outputs[0]  # 通常は1つだけ返ってくる
 print(f"Output shape: {output_array.shape}")
 print(f"First few outputs:\n{output_array[0][:5]}")
-
