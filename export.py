@@ -1545,3 +1545,6 @@ def main(opt):
 if __name__ == "__main__":
     opt = parse_opt()
     main(opt)
+    import onnxruntime as ort
+    session = ort.InferenceSession("runs/train/yolov5n_d076_sppNone_g100/weights/best.onnx")
+    print([o.name for o in session.get_outputs()])
