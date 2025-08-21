@@ -1,19 +1,19 @@
 # yolo_webcam.py
 import time
+import argparse
 import numpy as np
 import cv2 as cv
-from yolo_util import YOLO  # ← NMS込みONNXを呼ぶクラス（frameを受け取って前処理する想定）
+from yolo_util import YOLO  # NMS込みONNXを呼ぶクラス
 
-ONNX_PATH = "runs/train/yolov5n_d076_sppNone_g100/weights/best_with_nms.onnx"  # ★ NMS込みONNX
-IMG_SIZE  = 640                      # ★ エクスポート時の入力サイズに合わせる
-CONF_THRES = 0.25                    # 追加で絞る場合
+"""
+exp:
+python3 yolo_webcam.py --onnx runs/train/yolov5n_d076_sppNone_g100/weights/best_with_nms.onnx
+"""
 
-def parse_outputs(outputs):
-    """
-    NMS込みONNXの代表的な2パターンを吸収して [N,6](xyxy,conf,cls) に揃える
-    1) 4出力: [num_dets(1), boxes(1,M,4), scores(1,M), labels(1,M)]
-    2) 1出力: (M,6) or (1,M,6)
-    """
+IMG_SIZE = 640     # エクスポート時の入力サイズ
+CONF_THRES = 0.25  # 追加で絞る場合
+
+def parse_outputs(outputs, conf_thres=CONF_THRES):
     if isinstance(outputs, (list, tuple)) and len(outputs) == 4:
         num_dets, boxes, scores, labels = outputs
         m = int(np.array(num_dets).ravel()[0])
@@ -22,7 +22,7 @@ def parse_outputs(outputs):
         dets = []
         for i in range(m):
             conf = float(scores[0][i])
-            if conf < CONF_THRES:
+            if conf < conf_thres:
                 continue
             x1, y1, x2, y2 = boxes[0][i]
             cls_id = float(labels[0][i])
@@ -36,10 +36,9 @@ def parse_outputs(outputs):
             return dets[:, :6].astype(np.float32)
         return np.zeros((0, 6), dtype=np.float32)
 
-def draw_dets(frame, dets):
-    """入力IMG_SIZE基準のxyxyをframe実サイズへスケールして描画"""
+def draw_dets(frame, dets, imgsz=IMG_SIZE):
     h, w = frame.shape[:2]
-    sx, sy = w / IMG_SIZE, h / IMG_SIZE
+    sx, sy = w / imgsz, h / imgsz
     for x1, y1, x2, y2, conf, cls_id in dets:
         x1, x2 = int(x1 * sx), int(x2 * sx)
         y1, y2 = int(y1 * sy), int(y2 * sy)
@@ -48,16 +47,19 @@ def draw_dets(frame, dets):
                    cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2, cv.LINE_AA)
 
 def main():
-    yolo = YOLO(ONNX_PATH, imgsz=IMG_SIZE)  # ★ frameを渡せば内部で前処理→ONNX実行→出力list/ndarrayを返す想定
+    parser = argparse.ArgumentParser(description="YOLOv5 ONNX Webcam")
+    parser.add_argument("--onnx", required=True, help="Path to ONNX model (with NMS)")
+    args = parser.parse_args()
+
+    yolo = YOLO(args.onnx, imgsz=IMG_SIZE)
 
     cap = cv.VideoCapture(0, cv.CAP_V4L2)
     if not cap.isOpened():
         print("Cannot open camera")
         return
-    # 速度安定用（環境で調整）
     cap.set(cv.CAP_PROP_FRAME_WIDTH,  640)
     cap.set(cv.CAP_PROP_FRAME_HEIGHT, 480)
-    cap.set(cv.CAP_PROP_FOURCC, cv.VideoWriter_fourcc(*'MJPG'))  # 映らなければコメントアウト
+    cap.set(cv.CAP_PROP_FOURCC, cv.VideoWriter_fourcc(*'MJPG'))
 
     while True:
         ok, frame = cap.read()
@@ -66,11 +68,11 @@ def main():
             break
 
         t0 = time.time()
-        outputs = yolo(frame)             # ★ ここは前処理しないでframeをそのまま渡す
-        fps = 1.0 / (time.time() - t0)
+        outputs = yolo(frame)
+        fps = 1.0 / max(1e-6, (time.time() - t0))
 
-        dets = parse_outputs(outputs)     # NMS込み出力を統一形に
-        draw_dets(frame, dets)            # そのまま描画
+        dets = parse_outputs(outputs)
+        draw_dets(frame, dets)
 
         cv.putText(frame, f"FPS: {fps:.1f}", (5, 22),
                    cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
