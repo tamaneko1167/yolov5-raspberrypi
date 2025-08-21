@@ -4,7 +4,7 @@ import numpy as np
 import cv2 as cv
 from yolo_util import YOLO  # ← NMS込みONNXを呼ぶクラス（frameを受け取って前処理する想定）
 
-ONNX_PATH = "runs/train/yolov5n_sppNone_g100/weights/best_with_nms.onnx"  # ★ NMS込みONNX
+ONNX_PATH = "runs/train/yolov5n_d076_sppNone_g100/weights/best_with_nms.onnx"  # ★ NMS込みONNX
 IMG_SIZE  = 640                      # ★ エクスポート時の入力サイズに合わせる
 CONF_THRES = 0.25                    # 追加で絞る場合
 
