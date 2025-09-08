@@ -1,15 +1,16 @@
 import os
 import time
-import onnxruntime as ort
-import numpy as np
-import cv2
 from pathlib import Path
+
+import cv2
+import numpy as np
+import onnxruntime as ort
 from tqdm import tqdm
 
 # 設定
 onnx_path = "yolov5/runs/train/yolov5n_voc_baseline/weights/best.onnx"
 img_dir = "yolov5/datasets/VOC/images/test2007"
-#img_dir = "yolov5/data/images"
+# img_dir = "yolov5/data/images"
 output_dir = "yolov5/onnx_output"
 txt_output_dir = os.path.join(output_dir, "labels")
 img_size = 640
@@ -22,6 +23,7 @@ os.makedirs(txt_output_dir, exist_ok=True)
 session = ort.InferenceSession(onnx_path, providers=["CPUExecutionProvider"])
 input_name = session.get_inputs()[0].name
 
+
 # 前処理関数
 def preprocess(img_path):
     img0 = cv2.imread(img_path)
@@ -30,6 +32,7 @@ def preprocess(img_path):
     img = img.transpose(2, 0, 1).astype(np.float32) / 255.0
     img = np.expand_dims(img, axis=0)
     return img, img0.shape[1], img0.shape[0]
+
 
 # 非最大抑制（簡易版）
 def nms(pred, conf_thres=0.25, iou_thres=0.45):
@@ -47,6 +50,7 @@ def nms(pred, conf_thres=0.25, iou_thres=0.45):
         boxes = boxes[1:][ious < iou_thres]
     return keep
 
+
 def iou(box, boxes):
     # [x1, y1, x2, y2]
     x1 = np.maximum(box[0], boxes[:, 0])
@@ -57,6 +61,7 @@ def iou(box, boxes):
     area1 = (box[2] - box[0]) * (box[3] - box[1])
     area2 = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
     return inter / (area1 + area2 - inter + 1e-6)
+
 
 # 画像取得
 image_paths = sorted(list(Path(img_dir).glob("*.jpg")))
@@ -75,7 +80,7 @@ for img_path in tqdm(image_paths, desc="Running ONNX Inference"):
     pred = np.squeeze(pred)
     if len(pred.shape) != 2:
         continue
-    
+
     # pred shape: (25200, 25)
     filtered = []
 
@@ -84,7 +89,7 @@ for img_path in tqdm(image_paths, desc="Running ONNX Inference"):
         obj_conf = det[4]
         class_probs = det[5:]
 
-        cls_id = np.argmax(class_probs)       
+        cls_id = np.argmax(class_probs)
         cls_conf = class_probs[cls_id]
         conf = obj_conf * cls_conf
 
@@ -92,7 +97,7 @@ for img_path in tqdm(image_paths, desc="Running ONNX Inference"):
             filtered.append([x1, y1, x2, y2, conf, cls_id])
 
     filtered = np.array(filtered)
-    #boxes = nms(filtered, conf_thres, iou_thres)
+    # boxes = nms(filtered, conf_thres, iou_thres)
     txt_path = os.path.join(txt_output_dir, Path(img_path).stem + ".txt")
 
     with open(txt_path, "w") as f:
